@@ -11,7 +11,6 @@ public class SignalProject {
     private MulNoise mulNoise;
     private ResultWriter resWr;
     private static ResultPrinter resPrinter;
-    //nuovo commento
     public static final double signalFrequency = 128;
     public static final double signalAmplitude = 2;
     public static final double signalPhase = 0;
