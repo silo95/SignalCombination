@@ -18,13 +18,14 @@ class ResultWriter implements Runnable, Callable<String>{
     private final Condition cond;
     private final LinkedList<Sample> signalQueue;
     private final AtomicInteger diffSamples;
+    private final Lock globalLock;
     private final Condition full;
     private final PriorityQueue<Sample> resultQueue;
     private final AtomicInteger writtenResults;
     private final int queueCapacity;
     
     public ResultWriter(Lock l, Condition c, double time, LinkedList<Sample> list,
-            AtomicInteger count, Condition co, PriorityQueue<Sample> pq,
+            AtomicInteger count, Lock sharedLock, Condition co, PriorityQueue<Sample> pq,
             AtomicInteger ai, int capacity){
         lock = l;
         cond = c;
@@ -35,6 +36,7 @@ class ResultWriter implements Runnable, Callable<String>{
         resultQueue = pq;
         writtenResults = ai;
         queueCapacity = capacity;
+        globalLock = sharedLock;
     }
     @Override
     public void run() {
@@ -51,89 +53,46 @@ class ResultWriter implements Runnable, Callable<String>{
             }
             //Collections.sort(signalQueue, new SampleComparator());
             //for(int i=0; i<3; i++){
-            for(int i=0; i<signalQueue.size(); i++){
-                //Sample samp = signalQueue.poll();
-                Sample samp = signalQueue.get(i);
-                if(samp.recordedTimestamp == resTimestamp){
-                    switch(samp.type){
-                        case ADDNOISE:
-                            addValue = samp.value;
-                            addSample = samp;
-                            break;
-                        case MULNOISE:
-                            mulValue = samp.value;
-                            mulSample = samp;
-                            break;
-                        case SIGNAL:
-                            signalValue = samp.value;
-                            signalSample = samp;
-                            break;
-                    }
-                }
-                /*printedTime = samp.recordedTimestamp;
-                switch(samp.type){
-                    case ADDNOISE:
-                        addValue = samp.value;
-                        break;
-                    case SIGNAL:
-                        signalValue = samp.value;
-                        break;
-                    case MULNOISE:
-                        mulValue = samp.value;
-                        break;
-                    default:
-                        System.out.println("ERROR: value not found!\n");
-                }*/
-            }
-            signalQueue.remove(addSample);
-            signalQueue.remove(signalSample);
-            signalQueue.remove(mulSample);
-            double sum = signalValue + addValue;
-            if(mulValue == 0 && sum < 0)
-                result = 0.0;
-            else
-                result = (signalValue + addValue)*mulValue;
-            //diffSamples.set(0);
-            /*if(signalQueue.peekFirst()!=null){
-                boolean signalFound = false;
-                boolean addFound = false;
-                boolean mulFound = false;
+            globalLock.lock();
+            try{
                 for(int i=0; i<signalQueue.size(); i++){
-                    if(addFound && signalFound && mulFound)
-                        break;
-                    Sample s = signalQueue.get(i);
-                    switch(s.type){
-                        case ADDNOISE:
-                            if(!addFound){
-                                diffSamples.incrementAndGet();
-                                addFound = true;
-                            }
-                            break;
-                        case SIGNAL:
-                            if(!signalFound){
-                                diffSamples.incrementAndGet();
-                                signalFound = true;
-                            }
-                            break;
-                        case MULNOISE:
-                            if(!mulFound){
-                                diffSamples.incrementAndGet();
-                                mulFound = true;
-                            }
-                            break;
+                    Sample samp = signalQueue.get(i);
+                    if(samp.recordedTimestamp == resTimestamp){
+                        switch(samp.type){
+                            case ADDNOISE:
+                                addValue = samp.value;
+                                addSample = samp;
+                                break;
+                            case MULNOISE:
+                                mulValue = samp.value;
+                                mulSample = samp;
+                                break;
+                            case SIGNAL:
+                                signalValue = samp.value;
+                                signalSample = samp;
+                                break;
+                        }
                     }
                 }
-            }*/
-            /*int ret = diffSamples.get();
-            System.out.println(Thread.currentThread().getName() + " res diffSamples: " + ret);
-            if(ret==3)
-                    cond.signal();*/
-            Sample s = new Sample(resTimestamp, result, Sample.SignalType.RESULT);
-            resultQueue.add(s);
-            int ret = writtenResults.incrementAndGet();
-            if(ret == queueCapacity){
-                full.signal();
+                signalQueue.remove(addSample);
+                signalQueue.remove(signalSample);
+                signalQueue.remove(mulSample);
+                double sum = signalValue + addValue;
+                if(mulValue == 0 && sum < 0)
+                    result = 0.0;
+                else
+                    result = (signalValue + addValue)*mulValue;
+                Sample s = new Sample(resTimestamp, result, Sample.SignalType.RESULT);
+                resultQueue.add(s);
+                int ret = writtenResults.incrementAndGet();
+                if(ret == queueCapacity){
+                    full.signal();
+                } 
             }
+            finally{
+                globalLock.unlock();
+            }
+            
         }catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }

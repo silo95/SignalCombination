@@ -1,4 +1,5 @@
 import java.io.*;
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -35,10 +36,14 @@ class ResultPrinter implements Runnable, Callable<String>{
             FileOutputStream os = new FileOutputStream("results.csv");
             for(int i=0; i<size; i++){
                 Sample s = queue.poll();
-                String res = s.recordedTimestamp + ";" + s.value + "\n";
+                DecimalFormatSymbols dfs = new DecimalFormatSymbols(Locale.GERMAN);
+                dfs.setDecimalSeparator(',');
+                dfs.setGroupingSeparator('.');
+                DecimalFormat df = new DecimalFormat("####.##########");
+                String res = df.format(s.recordedTimestamp) + ";" + df.format(s.value) + "\n";
                 byte[] strToBytes = res.getBytes();
                 //System.out.println("(" + s.recordedTimestamp + ", " + s.value + ")");
-                msg += "(" + s.recordedTimestamp + ", " + s.value + ")\n";
+                msg += "(" + df.format(s.recordedTimestamp) + " ; " + df.format(s.value) + ")\n";
                 os.write(strToBytes);
             }
         }catch (InterruptedException ie) {
