@@ -1,4 +1,3 @@
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -51,8 +50,6 @@ class ResultWriter implements Runnable, Callable<String>{
             while(diffSamples.get()<3){
                 cond.await();
             }
-            //Collections.sort(signalQueue, new SampleComparator());
-            //for(int i=0; i<3; i++){
             globalLock.lock();
             try{
                 for(int i=0; i<signalQueue.size(); i++){

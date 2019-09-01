@@ -1,4 +1,3 @@
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,27 +36,10 @@ public class AdditiveNoise implements Runnable, Callable<String>{
         try{
             Random rand = new Random();
             value = rand.nextGaussian()*Math.sqrt(noiseVariance) + noiseMean;
-            /*double res = Math.random();
-            if(res <= 0.5){
-                value = -0.3;
-            }else{
-                value = 0.3;
-            }*/
             Sample samp = new Sample(samplingTime, value, Sample.SignalType.ADDNOISE);
-            
-            /*boolean found = false;
-            for(int i=0; i<signalQueue.size();i++){
-                Sample s = signalQueue.get(i);
-                if(s.type == Sample.SignalType.ADDNOISE){
-                   found = true;
-                   break;
-                }         
-            }*/
             signalQueue.add(samp);
             int ret = -1;
-            //if(!found){
-                ret = diffSamples.incrementAndGet();
-            //}
+            ret = diffSamples.incrementAndGet();
             
             //System.out.println(Thread.currentThread().getName() + " add diffSamples= " + ret);
             

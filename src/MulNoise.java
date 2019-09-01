@@ -37,19 +37,9 @@ public class MulNoise implements Runnable, Callable<String>{
                 value = 1.0;
             }
             Sample samp = new Sample(samplingTime, value, Sample.SignalType.MULNOISE);
-            /*boolean found = false;
-            for(int i=0; i<signalQueue.size();i++){
-                Sample s = signalQueue.get(i);
-                if(s.type == Sample.SignalType.MULNOISE){
-                   found = true;
-                   break;
-                }         
-            }*/
             signalQueue.add(samp);
             int ret = -1;
-            //if(!found){
-                ret = diffSamples.incrementAndGet();
-            //}
+            ret = diffSamples.incrementAndGet();
             //System.out.println(Thread.currentThread().getName() + " mul diffSamples= " + ret);
             if(ret == 3)
                 cond.signal();

@@ -1,4 +1,3 @@
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -38,19 +37,9 @@ public class SignalSample implements Runnable, Callable<String>{
             value = signalAmplitude * Math.sin(2*Math.PI*signalFrequency*samplingTime
                 + signalPhase);
             Sample samp = new Sample(samplingTime, value, Sample.SignalType.SIGNAL);
-            /*boolean found = false;
-            for(int i=0; i<signalQueue.size();i++){
-                Sample s = signalQueue.get(i);
-                if(s.type == Sample.SignalType.SIGNAL){
-                   found = true;
-                   break;
-                }         
-            }*/
             signalQueue.add(samp);
             int ret = -1;
-            //if(!found){
-                ret = diffSamples.incrementAndGet();
-            //}
+            ret = diffSamples.incrementAndGet();
             //System.out.println(Thread.currentThread().getName() + " signal diffSamples: " + ret);
             if(ret == 3)
                 cond.signal();
